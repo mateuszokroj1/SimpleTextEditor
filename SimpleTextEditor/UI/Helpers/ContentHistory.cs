@@ -129,8 +129,9 @@ namespace SimpleTextEditor.UI.Helpers
             return false;
         }
 
-        public IEnumerator<string> GetEnumerator() => throw new NotImplementedException();
-        IEnumerator IEnumerable.GetEnumerator() => throw new NotImplementedException();
+        public IEnumerator<string> GetEnumerator() => new ContentHistoryEnumerator(ref this.collection);
+        IEnumerator IEnumerable.GetEnumerator() => new ContentHistoryEnumerator(ref this.collection);
+
 
         public int IndexOf(string item)
         {
@@ -182,16 +183,5 @@ namespace SimpleTextEditor.UI.Helpers
         }
 
         #endregion
-    }
-
-    internal class ContentHistoryEnumerator : IEnumerator<string>
-    {
-        public string Current => throw new NotImplementedException();
-
-        object IEnumerator.Current => throw new NotImplementedException();
-
-        public void Dispose() => throw new NotImplementedException();
-        public bool MoveNext() => throw new NotImplementedException();
-        public void Reset() => throw new NotImplementedException();
     }
 }

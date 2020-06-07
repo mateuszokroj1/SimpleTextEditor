@@ -1,4 +1,5 @@
 ﻿using SimpleTextEditor.UI.Helpers;
+using SimpleTextEditor.UI.Models;
 
 using System;
 using System.Collections.Generic;
@@ -21,8 +22,10 @@ namespace SimpleTextEditor.UI.ViewModels
 
         public MainWindowViewModel(Window window, params FileStream[] filesToOpen) : this(window)
         {
-            foreach(var file in filesToOpen)
-                
+            foreach (var file in filesToOpen)
+#pragma warning disable CS4014
+                OpenFileAsync(file);
+#pragma warning restore CS4014
         }
 
         #endregion
