@@ -1,0 +1,52 @@
+﻿<Window x:Class="SimpleTextEditor.UI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SimpleTextEditor.UI"
+        mc:Ignorable="d"
+        Title="Prosty edytor tekstu" Height="500" Width="800">
+    <Window.Resources>
+        <Style x:Key="StatusTextBlockStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="Black" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+        <Style x:Key="StatusSeparatorStyle" TargetType="Separator">
+            <Setter Property="Background" Value="#FFBDBDBD" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="20" />
+        </Grid.RowDefinitions>
+        <Menu Grid.Row="0">
+            <MenuItem Header="Plik">
+                <MenuItem Header="Nowy" Command="ApplicationCommands.New" />
+                <Separator />
+                <MenuItem Header="Otwórz" Command="ApplicationCommands.Open" />
+                <Separator />
+                <MenuItem Header="Zapisz" Command="ApplicationCommands.Save" />
+                <MenuItem Header="Zapisz jako..." Command="ApplicationCommands.SaveAs" />
+            </MenuItem>
+            <MenuItem Header="Edycja">
+                <MenuItem Header="Zaznacz wszystko" Command="ApplicationCommands.SelectAll" />
+            </MenuItem>
+        </Menu>
+        <TabControl Grid.Row="1">
+            
+            <TabItem Header="a">
+                <TextBox/>
+            </TabItem>
+        </TabControl>
+        <StatusBar Grid.Row="2">
+            <TextBlock MinWidth="100" Style="{StaticResource StatusTextBlockStyle}" />
+            <Separator Style="{StaticResource StatusSeparatorStyle}" />
+            <TextBlock MinWidth="50" Style="{StaticResource StatusTextBlockStyle}" />
+            <Separator Style="{StaticResource StatusSeparatorStyle}" />
+            <TextBlock MinWidth="50" Style="{StaticResource StatusTextBlockStyle}" />
+        </StatusBar>
+    </Grid>
+</Window>
