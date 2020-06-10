@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SimpleTextEditor.UI.Helpers
 {
-    public class ContentHistory : IEnumerable<string>, IList<string>, IObservable<string>
+    public class ContentHistory : ModelBase, IEnumerable<string>, IList<string>, IObservable<string>
     {
         #region Constructors
 
@@ -58,7 +58,7 @@ namespace SimpleTextEditor.UI.Helpers
         
         public bool CanUndo => currentPosition > 0;
 
-        string IList<string>.this[int index] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        string IList<string>.this[int index] { get => this[index]; set => throw new InvalidOperationException(); }
 
         #endregion
 
@@ -84,6 +84,7 @@ namespace SimpleTextEditor.UI.Helpers
 
                     subscriber.OnCompleted();
                 }
+                OnPropertyChanged(nameof(CurrentValue));
                 return true;
             }
             else
@@ -97,6 +98,7 @@ namespace SimpleTextEditor.UI.Helpers
                     subscriber.OnCompleted();
                 }
 
+                OnPropertyChanged(nameof(CurrentValue));
                 return false;
             }
         }
@@ -112,6 +114,7 @@ namespace SimpleTextEditor.UI.Helpers
             if(currentPosition > 0)
             {
                 currentPosition--;
+                OnPropertyChanged(nameof(CurrentValue));
                 return true;
             }
 
@@ -123,6 +126,7 @@ namespace SimpleTextEditor.UI.Helpers
             if(currentPosition < this.collection.Length - 1)
             {
                 currentPosition++;
+                OnPropertyChanged(nameof(CurrentValue));
                 return true;
             }
 

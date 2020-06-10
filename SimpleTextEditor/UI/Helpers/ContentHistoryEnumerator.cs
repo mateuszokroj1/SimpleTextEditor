@@ -18,7 +18,13 @@ namespace SimpleTextEditor.UI.Helpers
         {
             get
             {
+                if (index < 0)
+                    throw new InvalidOperationException();
 
+                if (index >= array.Length)
+                    throw new IndexOutOfRangeException();
+
+                return this.array[index];
             }
         }
 
@@ -27,7 +33,8 @@ namespace SimpleTextEditor.UI.Helpers
         public void Dispose() { }
         public bool MoveNext()
         {
-            if (this.index == this.maxIndex) return false;
+            if (this.index + 1 >= this.array.Length || this.array[this.index + 1] == null)
+                return false;
 
             this.index++;
             return true;
