@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SimpleTextEditor.UI.Helpers
 {
@@ -14,6 +13,7 @@ namespace SimpleTextEditor.UI.Helpers
 
         private string[] array;
         private int index = -1;
+
         public string Current
         {
             get
@@ -30,7 +30,8 @@ namespace SimpleTextEditor.UI.Helpers
 
         object IEnumerator.Current => Current;
 
-        public void Dispose() { }
+        public void Dispose() { this.array = null; }
+        
         public bool MoveNext()
         {
             if (this.index + 1 >= this.array.Length || this.array[this.index + 1] == null)

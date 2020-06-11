@@ -36,6 +36,7 @@ namespace SimpleTextEditor.UI.Models
         private ContentHistory fileHistory;
         private bool readOnlyMode;
         private Encoding encoding;
+        private bool isSaved = true;
 
         #endregion
 
@@ -59,9 +60,24 @@ namespace SimpleTextEditor.UI.Models
             get => this.content;
             set
             {
-                if (this.content != value)
+                if (!this.content.Equals(value))
                 {
                     this.content = value;
+                    IsSaved = false;
+                    FileHistory.ChangeValue(value);
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public bool IsSaved
+        {
+            get => this.isSaved;
+            set
+            {
+                if(this.isSaved != value)
+                {
+                    this.isSaved = value;
                     OnPropertyChanged();
                 }
             }

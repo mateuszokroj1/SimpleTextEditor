@@ -1,19 +1,28 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
+using System.ComponentModel.DataAnnotations;
 
 namespace SimpleTextEditor.UI.Helpers
 {
-    public class ContentHistory : ModelBase, IEnumerable<string>, IList<string>, IObservable<string>
+    public class ContentHistory : ModelBase, IEnumerable<string>, IReadOnlyList<string>, IObservable<string>
     {
         #region Constructors
 
-        public ContentHistory(ushort historySize = 100)
+        public ContentHistory([Range(2, ushort.MaxValue)]ushort historySize = 100)
         {
             this.collection = new string[historySize];
             for (int i = 0; i < historySize; i++)
                 this.collection[i] = null;
+
+            HistorySize = historySize;
+
+            // Notify about changed properties
+            OnPropertyChanged(nameof(CurrentValue));
+            OnPropertyChanged(nameof(HistorySize));
+            OnPropertyChanged(nameof(Count));
+            OnPropertyChanged(nameof(CanRedo));
+            OnPropertyChanged(nameof(CanUndo));
         }
 
         #endregion
@@ -30,7 +39,28 @@ namespace SimpleTextEditor.UI.Helpers
 
         public int Count => this.currentPosition + 1;
 
-        public bool IsReadOnly => false;
+        public ushort HistorySize { get; protected set; }
+
+        /// <summary>
+        /// Gets the current setted value 
+        /// </summary>
+        /// <exception cref="InvalidOperationException"/>
+        public string CurrentValue
+        {
+            get
+            {
+                if (currentPosition == -1)
+                    throw new InvalidOperationException();
+
+                return this.collection[currentPosition];
+            }
+        }
+
+        public bool CanRedo
+            => currentPosition < this.collection.Length - 1 &&
+               this.collection[this.currentPosition + 1] != null;
+        
+        public bool CanUndo => currentPosition > 0;
 
         public string this[int index]
         {
@@ -43,28 +73,16 @@ namespace SimpleTextEditor.UI.Helpers
             }
         }
 
-        public string CurrentValue
-        {
-            get
-            {
-                if (currentPosition == -1) throw new InvalidOperationException();
-
-                return this.collection[currentPosition];
-            }
-            set => throw new InvalidOperationException();
-        }
-
-        public bool CanRedo => currentPosition < this.collection.Length - 1;
-        
-        public bool CanUndo => currentPosition > 0;
-
-        string IList<string>.this[int index] { get => this[index]; set => throw new InvalidOperationException(); }
-
         #endregion
 
         #region Methods
 
-        public bool ChangeValue(string value)
+        /// <summary>
+        /// Set new version in history
+        /// </summary>
+        /// <returns><see cref="ContentHistoryChangeValueMode"/> that determins the last value was removed from history</returns>
+        /// <exception cref="ArgumentException"/>
+        public ContentHistoryChangeValueMode ChangeValue(string value)
         {
             if (value == null)
                 throw new ArgumentNullException();
@@ -84,22 +102,42 @@ namespace SimpleTextEditor.UI.Helpers
 
                     subscriber.OnCompleted();
                 }
+
+                // Notify about changed properties
                 OnPropertyChanged(nameof(CurrentValue));
-                return true;
+
+                return ContentHistoryChangeValueMode.AddedWithRemovingOldest;
             }
             else
             {
                 this.collection[++this.currentPosition] = val;
 
+                List<string> removedValues = new List<string>();
+                for (int i = this.currentPosition; i < this.collection.Length; i++)
+                    if (this.collection[i] != null)
+                    {
+                        removedValues.Add(this.collection[i]);
+                        this.collection[i] = null;
+                    }
+
                 // Notify about change
                 foreach(var subscriber in this.observers)
                 {
                     subscriber.OnNext(val);
+
+                    foreach (var removedValue in removedValues)
+                        subscriber.OnNext(removedValue);
+
                     subscriber.OnCompleted();
                 }
 
+                // Notify about changed properties
                 OnPropertyChanged(nameof(CurrentValue));
-                return false;
+                OnPropertyChanged(nameof(Count));
+                OnPropertyChanged(nameof(CanRedo));
+                OnPropertyChanged(nameof(CanUndo));
+
+                return ContentHistoryChangeValueMode.AddedWithoutRemovingOldest;
             }
         }
 
@@ -109,24 +147,42 @@ namespace SimpleTextEditor.UI.Helpers
                 this.collection[i - 1] = this.collection[i];
         }
 
+        /// <summary>
+        /// Undo history if possible.
+        /// </summary>
+        /// <returns><see langword="true"/> if undo was possible, else <see langword="false"/></returns>
         public bool Undo()
         {
-            if(currentPosition > 0)
+            if(CanUndo)
             {
                 currentPosition--;
+
+                // Notify about changed properties
                 OnPropertyChanged(nameof(CurrentValue));
+                OnPropertyChanged(nameof(CanRedo));
+                OnPropertyChanged(nameof(CanUndo));
+
                 return true;
             }
 
             return false;
         }
 
+        /// <summary>
+        /// Redo history if possible.
+        /// </summary>
+        /// <returns><see langword="true"/> if undo was possible, else <see langword="false"/></returns>
         public bool Redo()
         {
-            if(currentPosition < this.collection.Length - 1)
+            if(CanRedo)
             {
                 currentPosition++;
+
+                // Notify about changed properties
                 OnPropertyChanged(nameof(CurrentValue));
+                OnPropertyChanged(nameof(CanRedo));
+                OnPropertyChanged(nameof(CanUndo));
+
                 return true;
             }
 
@@ -136,36 +192,62 @@ namespace SimpleTextEditor.UI.Helpers
         public IEnumerator<string> GetEnumerator() => new ContentHistoryEnumerator(ref this.collection);
         IEnumerator IEnumerable.GetEnumerator() => new ContentHistoryEnumerator(ref this.collection);
 
-
+        /// <summary>
+        /// Search for item in argument
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns>Returns index from 0 to max available index or -1 if not found</returns>
         public int IndexOf(string item)
         {
+            if (item == null)
+                return -1;
+
             for (int i = 0; i <= this.collection.Length; i++)
-                if (this.collection[i] == item)
+                if (this.collection[i]?.Equals(item) ?? false)
                     return i;
 
             return -1;
         }
-        /// <summary>See ChangeValue() method.</summary>
-        /// <exception cref="InvalidOperationException" />
-        [Obsolete]
-        public void Insert(int index, string item) => throw new NotImplementedException();
-        /// 
-        public void RemoveAt(int index) => throw new NotImplementedException();
-        /// <summary>See ChangeValue() method.</summary>
-        /// <exception cref="InvalidOperationException" />
-        [Obsolete]
-        public void Add(string item) => throw new InvalidOperationException();
 
+        /// <summary>
+        /// Removes all items
+        /// </summary>
         public void Clear()
         {
             this.currentPosition = -1;
 
+            List<string> removedValues = new List<string>(this.collection.Length);
+
             for (int i = 0; i < this.collection.Length; i++)
-                this.collection[i] = null;
+                if(this.collection[i] != null)
+                {
+                    removedValues.Add(this.collection[i]);
+                    this.collection[i] = null; 
+                }
+
+            // Notify subscribers
+            foreach(var subscriber in this.observers)
+            {
+                foreach (var removedValue in removedValues)
+                    subscriber.OnNext(removedValue);
+
+                subscriber.OnCompleted();
+            }
+
+            // Notify about changed properties
+            OnPropertyChanged(nameof(CurrentValue));
+            OnPropertyChanged(nameof(Count));
+            OnPropertyChanged(nameof(CanUndo));
+            OnPropertyChanged(nameof(CanRedo));
         }
 
         public bool Contains(string item) => IndexOf(item) > -1;
 
+        /// <summary>
+        /// Copy all values to new <see cref="string"/>[] array
+        /// </summary>
+        /// <param name="array">Destination array</param>
+        /// <param name="arrayIndex">Start index</param>
         public void CopyTo(string[] array, int arrayIndex)
         {
             if (array == null)
@@ -175,14 +257,23 @@ namespace SimpleTextEditor.UI.Helpers
                 array[i] = new string(this.collection[i]);
         }
 
-        /// <exception cref="InvalidOperationException"/>
-        [Obsolete]
-        public bool Remove(string item) => throw new InvalidOperationException();
-
+        /// <summary>
+        /// Register new <see cref="IObserver{T}"/> object to current <see cref="IObservable{T}"/> collection.
+        /// </summary>
         public IDisposable Subscribe(IObserver<string> observer)
         {
+            if (observer == null)
+                throw new ArgumentNullException();
+
             if (!observers.Contains(observer))
                 observers.Add(observer);
+            else return new Unsubscriber(this.observers, observer);
+
+            for (int i = 0; i <= this.currentPosition; i++)
+                observer.OnNext(this.collection[i]);
+
+            observer.OnCompleted();
+
             return new Unsubscriber(observers, observer);
         }
 

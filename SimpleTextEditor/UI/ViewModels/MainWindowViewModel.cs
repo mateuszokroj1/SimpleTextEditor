@@ -33,7 +33,6 @@ namespace SimpleTextEditor.UI.ViewModels
         #region Fields
 
         protected OpenedFile focusedFile;
-
         protected Window window;
 
         #endregion
@@ -67,6 +66,12 @@ namespace SimpleTextEditor.UI.ViewModels
 
         public async void OpenFile(FileStream file)
         => await OpenFileAsync(file);
+
+        public async Task CreateNewFileAsync()
+        => await Task.Run(()=>
+        {
+            
+        });
 
         #endregion
     }
